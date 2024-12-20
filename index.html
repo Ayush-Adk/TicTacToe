@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crazy Tic Tac Toe</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(to bottom, #6a11cb, #2575fc);
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .container {
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin: 0.5em 0;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      gap: 10px;
+      margin: 20px auto;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2em;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid white;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .cell:hover {
+      transform: scale(1.1);
+    }
+
+    .winner {
+      animation: glow 1s infinite alternate;
+    }
+
+    @keyframes glow {
+      from {
+        box-shadow: 0 0 10px #ff5733;
+      }
+      to {
+        box-shadow: 0 0 20px #ffbd33;
+      }
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #ffbd33;
+      color: #000;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #ff5733;
+    }
+
+    .dark-mode {
+      background: linear-gradient(to bottom, #1e1e2f, #2e2e4f);
+      color: #cfcfcf;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Crazy Tic Tac Toe</h1>
+    <div id="game-screen" style="display: none;">
+      <div id="info">
+        <p>Player 1: <span id="player1">X</span></p>
+        <p>Player 2: <span id="player2">O</span></p>
+        <p>Moves: <span id="moveCounter">0</span></p>
+        <p>Timer: <span id="timer">0</span> seconds</p>
+      </div>
+      <div class="board" id="board"></div>
+      <div class="controls">
+        <button onclick="restartGame()">Restart</button>
+        <button onclick="toggleDarkMode()">Dark Mode</button>
+        <button onclick="goBack()">Back</button>
+      </div>
+    </div>
+    <div id="menu-screen">
+      <button onclick="startGame()">Start Game</button>
+      <button onclick="quitGame()">Quit Game</button>
+    </div>
+  </div>
+  <canvas id="fireworks"></canvas>
+  <script>
+    let currentPlayer = "X";
+    let moves = 0;
+    let timer = 0;
+    let interval;
+
+    const board = document.getElementById("board");
+    const moveCounterDisplay = document.getElementById("moveCounter");
+    const timerDisplay = document.getElementById("timer");
+    const fireworksCanvas = document.getElementById("fireworks");
+    const fireworksCtx = fireworksCanvas.getContext("2d");
+
+    function startGame() {
+      document.getElementById("menu-screen").style.display = "none";
+      document.getElementById("game-screen").style.display = "block";
+      initializeBoard();
+      startTimer();
+    }
+
+    function quitGame() {
+      alert("Thanks for playing! Goodbye!");
+      window.close();
+    }
+
+    function goBack() {
+      document.getElementById("menu-screen").style.display = "block";
+      document.getElementById("game-screen").style.display = "none";
+      clearInterval(interval);
+    }
+
+    function initializeBoard() {
+      board.innerHTML = "";
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.addEventListener("click", () => makeMove(cell));
+        board.appendChild(cell);
+      }
+    }
+
+    function makeMove(cell) {
+      if (cell.textContent === "") {
+        cell.textContent = currentPlayer;
+        moves++;
+        moveCounterDisplay.textContent = moves;
+        if (checkWin()) {
+          endGame(`${currentPlayer} wins!`);
+        } else if (moves === 9) {
+          endGame("It's a draw!");
+        } else {
+          currentPlayer = currentPlayer === "X" ? "O" : "X";
+        }
+      }
+    }
+
+    function checkWin() {
+      const cells = Array.from(document.querySelectorAll(".cell"));
+      const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+      ];
+
+      return winPatterns.some(pattern => {
+        const [a, b, c] = pattern;
+        if (cells[a].textContent &&
+            cells[a].textContent === cells[b].textContent &&
+            cells[a].textContent === cells[c].textContent) {
+          cells[a].classList.add("winner");
+          cells[b].classList.add("winner");
+          cells[c].classList.add("winner");
+          return true;
+        }
+        return false;
+      });
+    }
+
+    function endGame(message) {
+      clearInterval(interval);
+      alert(message);
+      launchFireworks();
+    }
+
+    function restartGame() {
+      currentPlayer = "X";
+      moves = 0;
+      timer = 0;
+      moveCounterDisplay.textContent = moves;
+      timerDisplay.textContent = timer;
+      initializeBoard();
+      startTimer();
+    }
+
+    function startTimer() {
+      interval = setInterval(() => {
+        timer++;
+        timerDisplay.textContent = timer;
+      }, 1000);
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark-mode");
+    }
+
+    function launchFireworks() {
+      fireworksCanvas.width = window.innerWidth;
+      fireworksCanvas.height = window.innerHeight;
+      let particles = [];
+      for (let i = 0; i < 50; i++) {
+        particles.push({
+          x: Math.random() * fireworksCanvas.width,
+          y: Math.random() * fireworksCanvas.height,
+          size: Math.random() * 3 + 1,
+          color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+          velocity: {
+            x: (Math.random() - 0.5) * 4,
+            y: (Math.random() - 0.5) * 4
+          }
+        });
+      }
+      function render() {
+        fireworksCtx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+        
+        particles.forEach((particle, index) => {
+          particle.x += particle.velocity.x;
+          particle.y += particle.velocity.y;
+          particle.velocity.y += 0.05; // Simulating gravity
+
+          fireworksCtx.beginPath();
+          fireworksCtx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          fireworksCtx.fillStyle = particle.color;
+          fireworksCtx.fill();
+          fireworksCtx.closePath();
+
+          if (particle.y > fireworksCanvas.height || particle.x > fireworksCanvas.width || particle.x < 0) {
+            particles.splice(index, 1); // Remove particle if it moves off-screen
+          }
+        });
+
+        if (particles.length > 0) {
+          requestAnimationFrame(render);
+        }
+      }
+      
+      render();
+    }
+
+    window.addEventListener('resize', () => {
+      fireworksCanvas.width = window.innerWidth;
+      fireworksCanvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>
+
